@@ -1,0 +1,24 @@
+apiVersion: dbinstall.vatebur.dev/v1alpha1
+kind: DatabaseInstance
+metadata:
+  name: mysql
+spec:
+  provider: mysql
+  version: 8.4.6
+  installation:
+    method: archive
+    source: online
+  instance:
+    port: 3306
+    bindAddress: 0.0.0.0
+    paths:
+      data: /var/lib/dbinstall/instances/mysql/data
+      logs: /var/log/dbinstall/mysql
+      temp: /var/lib/dbinstall/instances/mysql/tmp
+  workload:
+    profile: oltp
+    memoryLimit: 8GiB
+    expectedConnections: 300
+    durability: strict
+  credentials:
+    adminPassword: env://DBINSTALL_ADMIN_PASSWORD
