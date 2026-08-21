@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/vatebur/dbinstall/internal/host"
+	"github.com/vatebur/dbinstall/internal/plan"
 	"github.com/vatebur/dbinstall/internal/spec"
 )
 
@@ -11,6 +12,9 @@ type testProvider struct{ name string }
 
 func (p testProvider) Descriptor() Descriptor                        { return Descriptor{Name: p.name} }
 func (testProvider) Validate(spec.DatabaseInstance, host.Info) error { return nil }
+func (testProvider) Plan(spec.DatabaseInstance, host.Info) ([]plan.Step, []plan.Warning, error) {
+	return nil, nil, nil
+}
 
 func TestRegistryRejectsDuplicateAndSorts(t *testing.T) {
 	registry := NewRegistry()

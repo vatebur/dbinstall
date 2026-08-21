@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,8 +11,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vatebur/dbinstall/internal/build"
 	"github.com/vatebur/dbinstall/internal/host"
+	"github.com/vatebur/dbinstall/internal/planner"
 	"github.com/vatebur/dbinstall/internal/providers/builtin"
 	"github.com/vatebur/dbinstall/internal/spec"
+	"github.com/vatebur/dbinstall/internal/state"
 )
 
 const (
@@ -48,6 +51,7 @@ func Execute() error {
 
 func NewRootCommand(stdout, stderr io.Writer) *cobra.Command {
 	var output string
+	var stateDirectory string
 	root := &cobra.Command{
 		Use:           "dbinstall",
 		Short:         "Plan and manage native database installations",
@@ -57,11 +61,14 @@ func NewRootCommand(stdout, stderr io.Writer) *cobra.Command {
 	root.SetOut(stdout)
 	root.SetErr(stderr)
 	root.PersistentFlags().StringVar(&output, "output", "human", "output format: human or json")
+	root.PersistentFlags().StringVar(&stateDirectory, "state-dir", "/var/lib/dbinstall", "local state directory")
 
 	root.AddCommand(newVersionCommand(stdout, &output))
 	root.AddCommand(newProvidersCommand(stdout, &output))
 	root.AddCommand(newInspectCommand(stdout, &output))
 	root.AddCommand(newValidateCommand(stdout, &output))
+	root.AddCommand(newPlanCommand(stdout, &output))
+	root.AddCommand(newStatusCommand(stdout, &output, &stateDirectory))
 	return root
 }
 
@@ -143,4 +150,85 @@ func writeJSON(writer io.Writer, value any) error {
 	encoder := json.NewEncoder(writer)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(value)
+}
+
+func newPlanCommand(stdout io.Writer, output *string) *cobra.Command {
+	var file string
+	command := &cobra.Command{
+		Use: "plan", Short: "Build a read-only installation plan",
+		RunE: func(_ *cobra.Command, _ []string) error {
+			document, err := spec.LoadFile(file)
+			if err != nil {
+				return &codedError{ExitValidation, err}
+			}
+			machine, err := (host.LocalDetector{}).Detect("/")
+			if err != nil {
+				return &codedError{ExitPreflight, err}
+			}
+			registry, err := builtin.Registry()
+			if err != nil {
+				return &codedError{ExitInternal, err}
+			}
+			result, err := (planner.Planner{Registry: registry}).Build(document, machine)
+			if err != nil {
+				return &codedError{ExitPreflight, err}
+			}
+			if *output == "json" {
+				return writeJSON(stdout, result)
+			}
+			fmt.Fprintf(stdout, "Plan %s for %s (%s %s)\nExecutable: %t\n", result.OperationID, result.InstanceName, result.Provider, result.Version, result.Executable)
+			for _, warning := range result.Warnings {
+				fmt.Fprintf(stdout, "WARNING [%s/%s] %s\n", warning.Risk, warning.Code, warning.Message)
+			}
+			for index, step := range result.Steps {
+				status := "pending-implementation"
+				if step.Implemented {
+					status = "ready"
+				}
+				fmt.Fprintf(stdout, "%d. %s [%s, %s] %s\n", index+1, step.ID, step.Privilege, status, step.Description)
+			}
+			return nil
+		},
+	}
+	command.Flags().StringVarP(&file, "file", "f", "", "path to the YAML specification")
+	_ = command.MarkFlagRequired("file")
+	return command
+}
+
+func newStatusCommand(stdout io.Writer, output, stateDirectory *string) *cobra.Command {
+	var instanceName string
+	command := &cobra.Command{
+		Use: "status", Short: "List locally managed instances without changing state",
+		RunE: func(_ *cobra.Command, _ []string) error {
+			if !state.Exists(*stateDirectory) {
+				if *output == "json" {
+					return writeJSON(stdout, []state.Instance{})
+				}
+				_, err := fmt.Fprintln(stdout, "No dbinstall state database exists; no managed instances are recorded.")
+				return err
+			}
+			store, err := state.Open(*stateDirectory)
+			if err != nil {
+				return &codedError{ExitPreflight, err}
+			}
+			defer store.Close()
+			instances, err := store.Instances(context.Background(), instanceName)
+			if err != nil {
+				return &codedError{ExitInternal, err}
+			}
+			if *output == "json" {
+				return writeJSON(stdout, instances)
+			}
+			if len(instances) == 0 {
+				fmt.Fprintln(stdout, "No managed instances found.")
+				return nil
+			}
+			for _, instance := range instances {
+				fmt.Fprintf(stdout, "%s\t%s\t%s\t%s\n", instance.Name, instance.Provider, instance.Version, instance.Status)
+			}
+			return nil
+		},
+	}
+	command.Flags().StringVar(&instanceName, "instance", "", "filter by instance name")
+	return command
 }

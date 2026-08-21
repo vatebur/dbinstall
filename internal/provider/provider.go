@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/vatebur/dbinstall/internal/host"
+	"github.com/vatebur/dbinstall/internal/plan"
 	"github.com/vatebur/dbinstall/internal/spec"
 )
 
@@ -32,6 +33,7 @@ type Descriptor struct {
 type Provider interface {
 	Descriptor() Descriptor
 	Validate(spec.DatabaseInstance, host.Info) error
+	Plan(spec.DatabaseInstance, host.Info) ([]plan.Step, []plan.Warning, error)
 }
 
 type Registry struct {
