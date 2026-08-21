@@ -19,3 +19,13 @@ func TestProvidersJSON(t *testing.T) {
 		}
 	}
 }
+
+func TestRejectsUnknownOutputFormat(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	command := NewRootCommand(&stdout, &stderr)
+	command.SetArgs([]string{"version", "--output", "xml"})
+	err := command.Execute()
+	if err == nil || ExitCode(err) != ExitUsage {
+		t.Fatalf("error = %v, exit code = %d", err, ExitCode(err))
+	}
+}

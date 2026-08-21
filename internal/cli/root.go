@@ -57,6 +57,12 @@ func NewRootCommand(stdout, stderr io.Writer) *cobra.Command {
 		Short:         "Plan and manage native database installations",
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
+			if output != "human" && output != "json" {
+				return &codedError{ExitUsage, fmt.Errorf("unsupported output format %q", output)}
+			}
+			return nil
+		},
 	}
 	root.SetOut(stdout)
 	root.SetErr(stderr)
@@ -207,7 +213,7 @@ func newStatusCommand(stdout io.Writer, output, stateDirectory *string) *cobra.C
 				_, err := fmt.Fprintln(stdout, "No dbinstall state database exists; no managed instances are recorded.")
 				return err
 			}
-			store, err := state.Open(*stateDirectory)
+			store, err := state.OpenReadOnly(*stateDirectory)
 			if err != nil {
 				return &codedError{ExitPreflight, err}
 			}

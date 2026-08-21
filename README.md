@@ -27,11 +27,15 @@ database telemetry.
 ```text
 dbinstall plan --file instance.yaml
 dbinstall status [--instance INSTANCE_ID]
+dbinstall inspect
+dbinstall providers
+dbinstall validate --file instance.yaml
 dbinstall version
 ```
 
-See [docs/design.md](docs/design.md), [docs/roadmap.md](docs/roadmap.md), and
-[docs/specification.md](docs/specification.md) for the complete agreed design.
+See [docs/design.md](docs/design.md), [docs/implementation-plan.md](docs/implementation-plan.md),
+[docs/roadmap.md](docs/roadmap.md), and [docs/specification.md](docs/specification.md)
+for the complete agreed design.
 
 ## Development toolchain
 
@@ -40,6 +44,13 @@ See [docs/design.md](docs/design.md), [docs/roadmap.md](docs/roadmap.md), and
 - Node.js 26.7.0 (documentation and repository tooling)
 
 Tool versions are managed with `vfox`.
+
+```text
+vfox use -p rust@1.90.0
+vfox use -p nodejs@26.7.0
+vfox use -p golang@1.26.5
+make check
+```
 
 ## License
 

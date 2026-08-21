@@ -1,0 +1,24 @@
+apiVersion: dbinstall.vatebur.dev/v1alpha1
+kind: DatabaseInstance
+metadata:
+  name: greatsql-lab
+spec:
+  provider: greatsql
+  version: 8.0.32
+  installation:
+    method: archive
+    source: offline
+    artifactPath: /srv/dbinstall/artifacts/greatsql.tar.xz
+  instance:
+    port: 3307
+    bindAddress: 0.0.0.0
+    paths:
+      data: /var/lib/dbinstall/instances/greatsql-lab/data
+      logs: /var/log/dbinstall/greatsql-lab
+      temp: /var/lib/dbinstall/instances/greatsql-lab/tmp
+  workload:
+    profile: development
+    memoryLimit: 2GiB
+    durability: strict
+  credentials:
+    adminPassword: file:///run/secrets/greatsql-admin

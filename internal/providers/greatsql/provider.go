@@ -25,6 +25,9 @@ func (Provider) Validate(document spec.DatabaseInstance, machine host.Info) erro
 	if machine.OSFamily != "rhel" && machine.OSFamily != "debian" {
 		return fmt.Errorf("unsupported OS family %q", machine.OSFamily)
 	}
+	if document.Spec.Installation.Method != "archive" {
+		return fmt.Errorf("GreatSQL foundation provider supports archive planning only")
+	}
 	return nil
 }
 

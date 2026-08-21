@@ -1,0 +1,6 @@
+dbinstall
+Copyright 2026 vatebur
+
+This product includes software developed by third parties. Dependency license
+metadata and a machine-readable SBOM will be generated as part of the release
+pipeline before the first binary release.

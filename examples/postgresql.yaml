@@ -1,0 +1,23 @@
+apiVersion: dbinstall.vatebur.dev/v1alpha1
+kind: DatabaseInstance
+metadata:
+  name: postgres-lab
+spec:
+  provider: postgresql
+  version: 17.6
+  installation:
+    method: package
+    source: online
+  instance:
+    port: 5432
+    bindAddress: 0.0.0.0
+    paths:
+      data: /var/lib/dbinstall/instances/postgres-lab/data
+      logs: /var/log/dbinstall/postgres-lab
+      temp: /var/lib/dbinstall/instances/postgres-lab/tmp
+  workload:
+    profile: development
+    memoryLimit: 2GiB
+    durability: strict
+  credentials:
+    adminPassword: env://DBINSTALL_POSTGRES_ADMIN_PASSWORD

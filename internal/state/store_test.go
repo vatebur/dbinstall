@@ -32,4 +32,16 @@ func TestStoreLifecycle(t *testing.T) {
 	if err := store.FinishOperation(context.Background(), "op1", "failed", "test", now.Add(time.Second)); err != nil {
 		t.Fatal(err)
 	}
+	if err := store.Close(); err != nil {
+		t.Fatal(err)
+	}
+	readOnly, err := OpenReadOnly(directory)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer readOnly.Close()
+	instances, err = readOnly.Instances(context.Background(), "orders")
+	if err != nil || len(instances) != 1 {
+		t.Fatalf("read-only instances = %#v, %v", instances, err)
+	}
 }

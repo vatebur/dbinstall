@@ -12,7 +12,7 @@ import (
 
 var (
 	namePattern    = regexp.MustCompile(`^[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?$`)
-	versionPattern = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$`)
+	versionPattern = regexp.MustCompile(`^[0-9]+\.[0-9]+(?:\.[0-9]+)?(?:[-+][0-9A-Za-z.-]+)?$`)
 	quantity       = regexp.MustCompile(`^([1-9][0-9]*)(KiB|MiB|GiB|TiB)$`)
 )
 
@@ -36,7 +36,7 @@ func Validate(document DatabaseInstance) error {
 	add(document.Kind == Kind, fmt.Sprintf("kind must be %q", Kind))
 	add(namePattern.MatchString(document.Metadata.Name), "metadata.name must be a lowercase DNS label")
 	add(oneOf(document.Spec.Provider, "mysql", "greatsql", "postgresql"), "spec.provider is unsupported")
-	add(versionPattern.MatchString(document.Spec.Version), "spec.version must be a complete x.y.z version")
+	add(versionPattern.MatchString(document.Spec.Version), "spec.version must be a complete vendor version such as x.y or x.y.z")
 	add(oneOf(document.Spec.Installation.Method, "archive", "package"), "installation.method must be archive or package")
 	add(oneOf(document.Spec.Installation.Source, "online", "offline"), "installation.source must be online or offline")
 	if document.Spec.Installation.Source == "offline" {

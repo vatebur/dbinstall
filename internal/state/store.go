@@ -58,6 +58,22 @@ func Open(directory string) (*Store, error) {
 	return store, nil
 }
 
+func OpenReadOnly(directory string) (*Store, error) {
+	path := filepath.Join(directory, DatabaseName)
+	if !Exists(directory) {
+		return nil, os.ErrNotExist
+	}
+	db, err := sql.Open("sqlite", "file:"+path+"?mode=ro")
+	if err != nil {
+		return nil, fmt.Errorf("open read-only state database: %w", err)
+	}
+	if err := db.Ping(); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("verify read-only state database: %w", err)
+	}
+	return &Store{db: db}, nil
+}
+
 func (s *Store) Close() error { return s.db.Close() }
 
 func (s *Store) migrate(ctx context.Context) error {
